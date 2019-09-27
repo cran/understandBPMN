@@ -260,3 +260,21 @@ test_that("Cross connectivity", {
   expect_equal(cross_connectivity(doc_event, generate_new_path_log = TRUE), 0)
   expect_equal(cross_connectivity(doc_simple, generate_new_path_log = TRUE), 0.5)
 })
+
+context("Cognitive weight")
+test_that("Cognitive weight", {
+  expect_equal(cognitive_weight(doc), 63)
+  expect_equal(cognitive_weight(doc_modified),78)
+  expect_equal(cognitive_weight(doc_empty), 0)
+  expect_equal(cognitive_weight(doc_event), 0)
+  expect_equal(cognitive_weight(doc_simple), 10)
+})
+
+context("Coupling metric")
+test_that("Coupling metric", {
+  expect_equal(round(coupling_metric(doc), digits = 4), 10.6111)
+  expect_equal(round(coupling_metric(doc_modified), digits = 4), 12.6111)
+  expect_equal(coupling_metric(doc_empty), 0)
+  expect_equal(coupling_metric(doc_event), 0)
+  expect_equal(coupling_metric(doc_simple), 2)
+})

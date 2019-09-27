@@ -25,7 +25,7 @@ calculate_metrics <-
     if(!generate_new_path_log ) {
       repetition_and_path_log <-
         create_path_and_repetition_log(file_path, signavio = signavio)
-      devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+      usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
       all_metrics <- tibble(
         file = file_path,
         size = size_process_model(file_path, signavio),
@@ -413,7 +413,7 @@ cyclomatic_metric <-
       repetition_and_path_log <- tryCatch(expr = withTimeout(create_path_and_repetition_log(file_path, signavio = signavio), timeout = time_to_generate_path_log), 
                  TimeoutException = function(ex) "TimedOut")
       if(!generate_new_path_log ) {
-        devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+        usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
       }
     } 
     if(length(repetition_and_path_log) > 1) {
@@ -559,7 +559,7 @@ separability <-
       repetition_and_path_log <- tryCatch(expr = withTimeout(create_path_and_repetition_log(file_path, signavio = signavio), timeout = time_to_generate_path_log), 
                  TimeoutException = function(ex) "TimedOut")
       if(!generate_new_path_log ) {
-        devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+        usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
       }
     } 
     if(length(repetition_and_path_log) > 1) {
@@ -778,7 +778,7 @@ cyclicity <-
       repetition_and_path_log <- tryCatch(expr = withTimeout(create_path_and_repetition_log(file_path, signavio = signavio), timeout = time_to_generate_path_log), 
                  TimeoutException = function(ex) "TimedOut")
       if(!generate_new_path_log ) {
-        devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+        usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
       }
     } 
     
@@ -827,7 +827,7 @@ diameter <- function(file_path,
     repetition_and_path_log <- tryCatch(expr = withTimeout(create_path_and_repetition_log(file_path, signavio = signavio), timeout = time_to_generate_path_log), 
                TimeoutException = function(ex) "TimedOut")
     if(!generate_new_path_log ) {
-      devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+      usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
     }
   } 
   if(length(repetition_and_path_log) > 1) {
@@ -884,7 +884,7 @@ structuredness <-
       repetition_and_path_log <- tryCatch(expr = withTimeout(create_path_and_repetition_log(file_path, signavio = signavio), timeout = time_to_generate_path_log), 
                  TimeoutException = function(ex) "TimedOut")
       if(!generate_new_path_log ) {
-        devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+        usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
       }
     } 
     if(length(repetition_and_path_log) > 1) {
@@ -991,7 +991,7 @@ depth <- function(file_path,
     repetition_and_path_log <- tryCatch(expr = withTimeout(create_path_and_repetition_log(file_path, signavio = signavio), timeout = time_to_generate_path_log), 
                TimeoutException = function(ex) "TimedOut")
     if(!generate_new_path_log ) {
-      devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+      usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
     }
   } 
   if(length(repetition_and_path_log) > 1) {
@@ -1091,6 +1091,163 @@ token_split <- function (file_path, signavio = FALSE) {
     return(0)
   }
 }
+
+#' @title Coupling metric
+#'
+#' @description {Coupling metric is defined as the sum of the number of activities, AND-splits and a weighterd number of OR and XOR splits}
+#' @param file_path document object created using the create_internal_document function
+#' @param signavio boolean which indicates whether the file stems from signavio
+#' @return an integer indicating the control flow complexity
+#' @examples
+#' \dontshow{file_path <- system.file("extdata", "doc.txt", package="understandBPMN")}
+#' coupling_metric(file_path)
+#' @export
+coupling_metric <-
+  function (file_path, signavio = FALSE) {
+    xml_internal_doc <- create_internal_doc(file_path, signavio)
+    if (!signavio) {
+    o_flows_exclusive <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:exclusiveGateway | //exclusiveGateway")
+    o_flows_event <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:eventBasedGateway | //eventBasedGateway")
+    o_flows_complex <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:complexGateway | //complexGateway")
+    o_flows_inclusive <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:inclusiveGateway | //inclusiveGateway")
+    
+    i_flows_exclusive <-
+      number_incoming_flows(xml_internal_doc,
+                            "//bpmn:exclusiveGateway | //exclusiveGateway")
+    i_flows_event <-
+      number_incoming_flows(xml_internal_doc,
+                            "//bpmn:eventBasedGateway | //eventBasedGateway")
+    i_flows_complex <-
+      number_incoming_flows(xml_internal_doc,
+                            "//bpmn:complexGateway | //complexGateway")
+    i_flows_inclusive <-
+      number_incoming_flows(xml_internal_doc,
+                            "//bpmn:inclusiveGateway | //inclusiveGateway")
+    
+    i_flows_activities <-
+      number_incoming_flows(xml_internal_doc,
+                            "//bpmn:task | //bpmn:sendTask | //bpmn:receiveTask |
+                            //bpmn:manualTask | //bpmn:businessRuleTask | //bpmn:userTask | //bpmn:scriptTask |
+                            //bpmn:subProcess | //bpmn:callActivity | //task")
+    o_flows_activities <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:task | //bpmn:sendTask | //bpmn:receiveTask |
+                            //bpmn:manualTask | //bpmn:businessRuleTask | //bpmn:userTask | //bpmn:scriptTask |
+                            //bpmn:subProcess | //bpmn:callActivity | //task")
+    } else {
+      o_flows_exclusive <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:exclusiveGateway", signavio = signavio)
+      o_flows_event <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:eventBasedGateway", signavio = signavio)
+      o_flows_complex <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:complexGateway", signavio = signavio)
+      o_flows_inclusive <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:inclusiveGateway", signavio = signavio)
+      
+      i_flows_exclusive <-
+        number_incoming_flows(xml_internal_doc, "//xmlns:exclusiveGateway", signavio = signavio)
+      i_flows_event <-
+        number_incoming_flows(xml_internal_doc, "//xmlns:eventBasedGateway", signavio = signavio)
+      i_flows_complex <-
+        number_incoming_flows(xml_internal_doc, "//xmlns:complexGateway", signavio = signavio)
+      i_flows_inclusive <-
+        number_incoming_flows(xml_internal_doc, "//xmlns:inclusiveGateway", signavio = signavio)
+      
+      i_flows_activities <-
+        number_incoming_flows(xml_internal_doc, "//xmlns:task | //xmlns:sendTask | //xmlns:receiveTask |
+                              //xmlns:manualTask | //xmlns:businessRuleTask | //xmlns:userTask | //xmlns:scriptTask |
+                              //xmlns:subProcess | //xmlns:callActivity", signavio = signavio)
+      
+      o_flows_activities <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:task | //xmlns:sendTask | //xmlns:receiveTask |
+                              //xmlns:manualTask | //xmlns:businessRuleTask | //xmlns:userTask | //xmlns:scriptTask |
+                              //xmlns:subProcess | //xmlns:callActivity", signavio = signavio)
+    }
+    
+    xor_join_activity_indices <- which(i_flows_activities > 0)
+    i_flows_activities <-  i_flows_activities[xor_join_activity_indices]
+    o_flows_activities <-  o_flows_activities[xor_join_activity_indices]
+    
+    xor_weights <- c(1/(i_flows_exclusive * o_flows_exclusive), 1/(i_flows_event*o_flows_event), 1/(i_flows_activities * o_flows_activities))
+    or_weights <- c(1 + 1/((2^i_flows_inclusive - 1) * (2^o_flows_inclusive - 1)) * ( 1 - 1/(i_flows_inclusive * o_flows_inclusive)), 1 + 1/((2^i_flows_complex - 1) * (2^o_flows_complex - 1)) * ( 1 - 1/(i_flows_complex * o_flows_complex)))
+    
+    xor_weights <- sum(xor_weights)
+    or_weights <- sum(or_weights)
+    and_weights <- number_AND_gateways(xml_internal_doc, signavio)
+    activity_weights <- number_tasks(xml_internal_doc, signavio) - length(xor_join_activity_indices)
+    
+    coupling_metric <- xor_weights + or_weights + and_weights + activity_weights
+    
+    return(coupling_metric)
+  }
+
+#' @title Cognitive weights
+#'
+#' @description {Cognitive weight is defined as a weighted sum of gateways and activities}
+#' @param file_path document object created using the create_internal_document function
+#' @param signavio boolean which indicates whether the file stems from signavio
+#' @return an integer indicating the control flow complexity
+#' @examples
+#' \dontshow{file_path <- system.file("extdata", "doc.txt", package="understandBPMN")}
+#' cognitive_weight(file_path)
+#' @export
+cognitive_weight <-
+  function (file_path, signavio = FALSE) {
+    xml_internal_doc <- create_internal_doc(file_path, signavio)
+    if(!signavio) {
+    o_flows_exclusive <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:exclusiveGateway | //exclusiveGateway")
+    o_flows_event <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:eventBasedGateway | //eventBasedGateway")
+    o_flows_complex <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:complexGateway | //complexGateway")
+    o_flows_inclusive <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:inclusiveGateway | //inclusiveGateway")
+    o_flows_parallel <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:parallelGateway | //parallelGateway")
+    o_flows_task <-
+      number_outgoing_flows(xml_internal_doc,
+                            "//bpmn:task | //bpmn:sendTask | //bpmn:receiveTask |
+                            //bpmn:manualTask | //bpmn:businessRuleTask | //bpmn:userTask | //bpmn:scriptTask |
+                            //bpmn:subProcess | //bpmn:callActivity | //task")
+    } else {
+      o_flows_exclusive <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:exclusiveGateway", signavio = signavio)
+      o_flows_event <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:eventBasedGateway", signavio = signavio)
+      o_flows_complex <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:complexGateway", signavio = signavio)
+      o_flows_inclusive <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:inclusiveGateway", signavio = signavio)
+      o_flows_parallel <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:parallelGateway", signavio = signavio)
+      o_flows_task <-
+        number_outgoing_flows(xml_internal_doc, "//xmlns:task | //xmlns:sendTask | //xmlns:receiveTask |
+                              //xmlns:manualTask | //xmlns:businessRuleTask | //xmlns:userTask | //xmlns:scriptTask |
+                              //xmlns:subProcess | //xmlns:callActivity", signavio = signavio)
+    }
+    number_sequences <- length(o_flows_task == 1)
+    number_parallel_splits <- length(o_flows_task > 1) + length(o_flows_parallel > 1)
+    number_or_splits <- length(o_flows_inclusive > 1) + length(o_flows_complex > 1)
+    number_xor_split_2 <- length(o_flows_exclusive == 2) + length(o_flows_event == 2)
+    number_xor_splits_more <- length(o_flows_exclusive > 2) + length(o_flows_event > 2)
+    
+    cognitive_weight <- number_sequences + 2 * number_xor_split_2 + 3 * number_xor_splits_more + 4 * number_parallel_splits + 7 * number_or_splits
+    return(cognitive_weight)
+  }
 
 #' @title Control flow complexity
 #'
@@ -1414,7 +1571,7 @@ cross_connectivity <-
         tryCatch(expr = withTimeout(create_path_and_repetition_log(file_path, signavio = signavio), timeout = time_to_generate_path_log), 
                  TimeoutException = function(ex) "TimedOut")
       if(!generate_new_path_log ) {
-        devtools::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
+        usethis::use_data(repetition_and_path_log,  internal = TRUE, overwrite = TRUE)
       }
     } 
     type <- NULL
